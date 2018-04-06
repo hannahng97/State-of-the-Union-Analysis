@@ -1,0 +1,172 @@
+---
+title: "Sentiment Analysis"
+author: "Han Nguyen, Carlos Echeverri, Nathan Mokhtarzadeh"
+date: "April 5, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(readtext)
+library(tidytext)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(wordcloud)
+library(reshape2)
+
+# read in text
+jfk <- readtext("JFK first state of the union.txt") %>% 
+  unnest_tokens(word, text)
+
+obama <- readtext("obama first state of the union.txt") %>% 
+  unnest_tokens(word, text)
+
+# joy, anger, anticipation
+nrc_joy <- get_sentiments("nrc") %>% 
+  filter(sentiment == "joy")
+
+nrc_anger <- get_sentiments("nrc") %>% 
+  filter(sentiment == "anger")
+
+nrc_anticipation <- get_sentiments("nrc") %>% 
+  filter(sentiment == "anticipation")
+```
+
+\newpage
+# Obama
+### Joy: 52 words
+```{r, message=FALSE, warning=FALSE}
+obama_joy <- obama %>% 
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE)
+
+obama_joy_wordcloud <- obama_joy %>% 
+  with(wordcloud(word, n))
+```
+
+\newpage
+### Anger: 51 words
+```{r, message=FALSE, warning=FALSE}
+obama_anger <- obama %>%
+  inner_join(nrc_anger) %>%
+  count(word, sort = TRUE)
+
+obama_anger_wordcloud <- obama_anger %>%
+  with(wordcloud(word, n))
+```
+
+\newpage
+### Anticipation: 77 words
+```{r, message=FALSE, warning=FALSE}
+obama_anticipation <- obama %>%
+  inner_join(nrc_anticipation) %>%
+  count(word, sort = TRUE)
+
+obama_anticipation_wordcloud <- obama_anticipation %>%
+  with(wordcloud(word, n))
+```
+
+\newpage
+### Positive vs. Negative Words
+```{r, message=FALSE, warning=FALSE}
+bing_word_counts <- obama %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Contribution to sentiment",
+       x = NULL) +
+  coord_flip()
+
+obama %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("gray20", "gray80"),
+                   max.words = 100)
+```
+
+\newpage
+# JFK
+### Joy: 62 words
+```{r, warning=FALSE, message=FALSE}
+jfk_joy <- jfk %>% 
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE)
+
+jfk_joy_wordcloud <- jfk_joy %>% 
+  with(wordcloud(word, n))
+```
+
+\newpage
+### Anger: 51 words
+```{r, warning=FALSE, message=FALSE}
+jfk_anger <- jfk %>%
+  inner_join(nrc_anger) %>%
+  count(word, sort = TRUE)
+
+jfk_anger_wordcloud <- jfk_anger %>%
+  with(wordcloud(word, n))
+```
+
+\newpage
+### Anticipation: 89 words
+```{r, warning=FALSE, message=FALSE}
+jfk_anticipation <- jfk %>%
+  inner_join(nrc_anticipation) %>%
+  count(word, sort = TRUE)
+
+jfk_anticipation_wordcloud <- jfk_anticipation %>%
+  with(wordcloud(word, n))
+```
+
+\newpage
+### Positive vs. Negative Words
+```{r, warning=FALSE, message=FALSE}
+bing_word_counts <- jfk %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Contribution to sentiment",
+       x = NULL) +
+  coord_flip()
+
+jfk %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("gray20", "gray80"),
+                   max.words = 100)
+```
+
+\newpage
+# Comparison Overall
+*Both presidents use the same number of anger words, but JFK uses more joy and anticipation words than Obama. 
+
+*Joy: hope, resources are in both word clouds
+
+*Anger: recession is in both word clouds
+
+*Anticipation: time, hope, efficient, finally, money, are in both word clouds
